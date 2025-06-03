@@ -1,0 +1,41 @@
+<ion-header mode="ios">
+  <div class="heigthAlto"></div>
+  <ion-toolbar color="success">
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ tipo }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-card mode="ios">
+    <ion-card-content>
+
+      <form [formGroup]="documentForm" (ngSubmit)="saveDocument()">
+        <ion-item>
+          <ion-label position="stacked">Título del Documento</ion-label>
+          <ion-input fill="outline" formControlName="title"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Descripción</ion-label>
+          <ion-textarea class="inputEnriqeucido" fill="outline" formControlName="content"></ion-textarea>
+        </ion-item>
+        @if (tipo == 'AGENDAS') {
+          <ion-datetime formControlName="event_datetime"></ion-datetime>
+        }
+        @if (tipo == 'MANUALES') {
+          <ion-button expand="full" expand="block" color="primary" (click)="fileInput.click()">Seleccionar Archivos
+          </ion-button>
+          <input #fileInput type="file" (change)="onFileSelected($event)" style="display: none;"/>
+        }
+        <ion-button expand="block" color="success" type="submit" [disabled]="!documentForm.valid">
+          Guardar
+        </ion-button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+
+</ion-content>
+

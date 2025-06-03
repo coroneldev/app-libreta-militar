@@ -1,0 +1,76 @@
+<ion-header mode="ios">
+  <div class="heigthAlto"></div>
+  <ion-toolbar color="success">
+    <ion-buttons slot="start">
+      <ion-menu-button color="warning"></ion-menu-button>
+    </ion-buttons>
+    <ion-title>LIBRETA MILITAR</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <div class="bg">
+    <br />
+    <ion-grid [fixed]="true">
+      <ion-row>
+        <ion-col size="4" class="ion-col-4">
+          <img src="assets/soldado.png">
+        </ion-col>
+        <ion-col size="8">
+          <h2 class="ion-text-wrap texto-blanco">Lista de tareas Militares</h2>
+        </ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col>
+          <ion-card mode="ios">
+            <ion-card-content>
+              <ion-list>
+                <ion-item (click)="Seleccionar('APUNTES')">
+                  <ion-thumbnail slot="start">
+                    <ion-icon name="book-sharp" class="text-zise"></ion-icon>
+                  </ion-thumbnail>
+                  <ion-label>APUNTES</ion-label>
+                </ion-item>
+
+                <ion-item (click)="Seleccionar('AGENDAS')">
+                  <ion-thumbnail slot="start">
+                    <ion-icon name="newspaper-sharp" class="text-zise"></ion-icon>
+                  </ion-thumbnail>
+                  <ion-label>AGENDAS</ion-label>
+                </ion-item>
+
+                <ion-item lines="none" (click)="Seleccionar('MANUALES')">
+                  <ion-thumbnail slot="start">
+                    <ion-icon name="calendar-number-sharp" class="text-zise"></ion-icon>
+                  </ion-thumbnail>
+                  <ion-label>MANUALES</ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+
+  <ion-fab #fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button color="success">
+      <ion-icon name="add-sharp"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+
+      <ion-fab-button color="success" (click)="addDocument('AGENDAS')">
+        <ion-icon name="calendar-number-sharp"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button color="success" (click)="addDocument('APUNTES')">
+        <ion-icon name="book-sharp"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button color="success" (click)="addDocument('MANUALES')">
+        <ion-icon name="newspaper-sharp"></ion-icon>
+      </ion-fab-button>
+      
+    </ion-fab-list>
+
+  </ion-fab>
+
+</ion-content>
