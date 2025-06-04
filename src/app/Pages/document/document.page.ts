@@ -1,37 +1,69 @@
-import {Component, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   ActionSheetController,
   IonBackButton,
   IonButton,
   IonButtons,
-  IonContent, IonFab, IonFabButton,
-  IonHeader, IonIcon, IonItem, IonItemOption, IonItemOptions, IonItemSliding, IonLabel, IonList, IonSearchbar,
+  IonContent,
+  IonFab,
+  IonFabButton,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonItemOption,
+  IonItemOptions,
+  IonItemSliding,
+  IonLabel,
+  IonList,
+  IonSearchbar,
   IonTitle,
-  IonToolbar, NavController
+  IonToolbar,
+  NavController
 } from '@ionic/angular/standalone';
-import {addIcons} from "ionicons";
+import { addIcons } from "ionicons";
 import {
   addSharp,
-  archiveOutline, archiveSharp, bookmarkOutline, bookmarkSharp, bookSharp, calendarNumberSharp, createOutline,
+  archiveOutline,
+  archiveSharp,
+  bookmarkOutline,
+  bookmarkSharp,
+  bookSharp,
+  calendarNumberSharp,
+  createOutline,
   heartOutline,
-  heartSharp, listSharp,
+  heartSharp,
+  listSharp,
   mailOutline,
-  mailSharp, newspaperSharp, openSharp,
+  mailSharp,
+  newspaperSharp,
+  openSharp,
   paperPlaneOutline,
-  paperPlaneSharp, trashOutline, trashSharp, warningOutline, warningSharp
+  paperPlaneSharp,
+  trashOutline,
+  trashSharp,
+  warningOutline,
+  warningSharp
 } from "ionicons/icons";
-import {DocumentService} from "../../services/document.service";
-import {ActivatedRoute} from "@angular/router";
-import {FileOpener} from "@capacitor-community/file-opener";
+import { DocumentService } from "../../services/document.service";
+import { ActivatedRoute } from "@angular/router";
+import { FileOpener } from "@capacitor-community/file-opener";
 
 @Component({
   selector: 'app-document',
   templateUrl: './document.page.html',
   styleUrls: ['./document.page.scss'],
   standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule, IonButtons, IonBackButton, IonButton, IonList, IonItem, IonLabel, IonFab, IonFabButton, IonIcon, IonItemSliding, IonItemOptions, IonItemOption, IonSearchbar]
+  imports: [
+    IonContent, IonHeader, IonTitle, IonToolbar,
+    CommonModule, FormsModule,
+    IonButtons, IonBackButton, IonButton,
+    IonList, IonItem, IonLabel,
+    IonFab, IonFabButton, IonIcon,
+    IonItemSliding, IonItemOptions, IonItemOption,
+    IonSearchbar
+  ]
 })
 export class DocumentPage implements OnInit {
   public listData: any[] = [];
@@ -39,8 +71,12 @@ export class DocumentPage implements OnInit {
   public tipo: string = "";
   public searchQuery: string = '';
 
-  constructor(private navCtrl: NavController, private documentService: DocumentService, private activatedRoute: ActivatedRoute,
-              private actionSheetCtrl: ActionSheetController) {
+  constructor(
+    private navCtrl: NavController,
+    private documentService: DocumentService,
+    private activatedRoute: ActivatedRoute,
+    private actionSheetCtrl: ActionSheetController
+  ) {
     addIcons({
       mailOutline,
       mailSharp,
@@ -76,12 +112,12 @@ export class DocumentPage implements OnInit {
   }
 
   public editDocument(item: any) {
-    this.navCtrl.navigateForward(`/add-document/${this.tipo}/${item.id}`, {animated: true});
+    this.navCtrl.navigateForward(`/add-document/${this.tipo}/${item.id}`, { animated: true });
   }
 
   public async deleteDocument(id: number): Promise<void> {
     const actionSheet = await this.actionSheetCtrl.create({
-      header: 'Esta seguro de eliminar el siguiente documento',
+      header: '¿Está seguro de eliminar este documento?',
       mode: 'ios',
       buttons: [
         {
@@ -93,10 +129,10 @@ export class DocumentPage implements OnInit {
           },
         },
         {
-          text: 'Cancel',
+          text: 'Cancelar',
           role: 'cancel',
           handler: () => {
-            console.log('Delete action was canceled');
+            console.log('Eliminación cancelada');
           },
         },
       ],
@@ -104,19 +140,15 @@ export class DocumentPage implements OnInit {
     await actionSheet.present();
   }
 
-
   public async listar() {
     this.listData = await this.documentService.filterDocumentsByType(this.tipo);
-    this.listData.sort((a, b) => {
-      return b.id - a.id;
-    });
+    this.listData.sort((a, b) => b.id - a.id);
     this.filteredListData = [...this.listData];
   }
 
   public addDocument() {
-    this.navCtrl.navigateForward(`/add-document/${this.tipo}/0`, {animated: true});
+    this.navCtrl.navigateForward(`/add-document/${this.tipo}/0`, { animated: true });
   }
-
 
   filterDocuments(event: any) {
     const query = event.target.value.toLowerCase();
@@ -134,7 +166,7 @@ export class DocumentPage implements OnInit {
     try {
       const mimeType = this.getMimeType(filePath);
       await FileOpener.open({
-        filePath: filePath,
+        filePath,
         contentType: mimeType
       });
       console.log('Archivo abierto correctamente');
@@ -159,7 +191,11 @@ export class DocumentPage implements OnInit {
       case 'png':
         return 'image/png';
       default:
-        return 'application/octet-stream';  // Para archivos genéricos
+        return 'application/octet-stream';
     }
+  }
+
+  trackById(index: number, item: any): number {
+    return item.id;
   }
 }

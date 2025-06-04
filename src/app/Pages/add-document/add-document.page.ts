@@ -1,55 +1,69 @@
-import {Component, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-  IonBackButton, IonButton,
-  IonButtons,
-  IonCard, IonCardContent,
-  IonContent, IonDatetime, IonDatetimeButton,
-  IonHeader, IonInput, IonItem, IonLabel, IonModal, IonTextarea,
-  IonTitle,
-  IonToolbar, NavController, ToastController
+  IonBackButton, IonButton, IonButtons, IonCard, IonCardContent, IonContent,
+  IonDatetime, IonDatetimeButton, IonHeader, IonInput, IonItem, IonLabel,
+  IonModal, IonTextarea, IonTitle, IonToolbar, NavController, ToastController
 } from '@ionic/angular/standalone';
-import {DocumentService} from "../../services/document.service";
-import {ActivatedRoute} from "@angular/router";
-import {LocalNotifications} from "@capacitor/local-notifications";
 
-import { FileOpener } from '@capacitor-community/file-opener';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { DocumentService } from '../../services/document.service';
+import { ActivatedRoute, Params } from '@angular/router';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-add-document',
   templateUrl: './add-document.page.html',
   styleUrls: ['./add-document.page.scss'],
   standalone: true,
-  imports: [IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule, IonButtons, IonBackButton, IonCard,
-    IonCardContent, IonItem, IonLabel, IonInput, IonTextarea, IonButton, ReactiveFormsModule, IonDatetimeButton, IonModal, IonDatetime
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule,
+    IonContent, IonHeader, IonToolbar, IonTitle,
+    IonButtons, IonBackButton, IonCard, IonCardContent,
+    IonItem, IonLabel, IonInput, IonTextarea, IonButton,
+    IonDatetimeButton, IonModal, IonDatetime,
+    SafeUrlPipe
   ]
 })
-export class AddDocumentPage implements OnInit {
+export class AddDocumentPage implements OnInit, OnDestroy {
   public documentForm!: FormGroup;
-  public tipo: string = "";
-  eventDatetime: string = '';
+  public tipo = '';
   public data: any;
-  public content: any;
 
-  file: any = null;
-  filePath: string = '';
+  filePreview: string | null = null;
+  fileUri: string | null = null;
+  imageFilePath: string | null = null;
+  pdfFilePath: string | null = null;
 
-  constructor(private fb: FormBuilder, private navCtrl: NavController, private documentService: DocumentService,
-              private activatedRoute: ActivatedRoute, private toastController: ToastController) {
-  }
+  private routeSub?: Subscription;
 
+  constructor(
+    private fb: FormBuilder,
+    private navCtrl: NavController,
+    private documentService: DocumentService,
+    private activatedRoute: ActivatedRoute,
+    private toastController: ToastController
+  ) {}
 
-  async ngOnInit() {
-    this.activatedRoute.params.subscribe(async (params) => {
+  ngOnInit() {
+    // Nos suscribimos a params para reactualizar si cambian
+    this.routeSub = this.activatedRoute.params.subscribe(async (params: Params) => {
       this.tipo = params['id'];
       this.data = params['data'];
-      this.initForm();
       if (this.data !== '0') {
         await this.loadDocumentData();
+      } else {
+        this.initForm();
       }
     });
+  }
+
+  ngOnDestroy() {
+    // Evitar fugas de memoria
+    this.routeSub?.unsubscribe();
   }
 
   private initForm(data: any = null) {
@@ -58,8 +72,14 @@ export class AddDocumentPage implements OnInit {
       type: [this.tipo, Validators.required],
       content: [data?.content || '', Validators.required],
       event_datetime: [data?.event_datetime || ''],
-      file: [data?.file || '']
+      imageFile: [data?.imageFile || ''],
+      pdfFile: [data?.pdfFile || '']
     });
+
+    this.filePreview = data?.imageFile?.startsWith('data:image') ? data.imageFile : null;
+    this.imageFilePath = data?.imageFile || null;
+    this.pdfFilePath = data?.pdfFile || null;
+    this.fileUri = null;
   }
 
   private async loadDocumentData() {
@@ -68,113 +88,132 @@ export class AddDocumentPage implements OnInit {
       if (data) {
         this.initForm(data);
       } else {
-        console.warn("No se encontraron datos para el ID:", this.data);
+        console.warn('No se encontraron datos para el ID:', this.data);
+        this.initForm(); // inicializamos vacío para evitar null refs
       }
     } catch (error) {
-      console.error("Error al cargar los datos del documento:", error);
+      console.error('Error al cargar el documento:', error);
+      this.initForm(); // inicializamos vacío para evitar errores
     }
   }
-
 
   public async saveDocument() {
-    let r = ``;
-    if (this.documentForm.valid) {
-      if (this.data == '0') {
-        this.documentService.addDocument(this.documentForm.value);
-        r = `registrado`;
-      } else {
-        this.documentForm.value.id = Number(this.data);
-        this.documentService.updateDocument(this.documentForm.value);
-        r = `guardado`;
-      }
-      const toast = await this.toastController.create({
-        message: `Documento ${r} correctamente`,
-        duration: 3000,
-        position: 'bottom',
-      });
-      await toast.present();
-      if (this.tipo == 'AGENDAS') {
-        this.scheduleNotification();
-      }
-      this.navCtrl.back();
-    }
+    if (!this.documentForm.valid) return;
 
+    this.documentForm.patchValue({
+      imageFile: this.imageFilePath,
+      pdfFile: this.pdfFilePath
+    });
+
+    try {
+      const payload = this.documentForm.value;
+      if (this.data === '0') {
+        await this.documentService.addDocument(payload);
+      } else {
+        await this.documentService.updateDocument({ ...payload, id: Number(this.data) });
+      }
+
+      await this.presentToast(`Documento ${this.data === '0' ? 'registrado' : 'actualizado'} correctamente`);
+
+      if (this.tipo === 'AGENDAS') {
+        await this.scheduleNotification();
+      }
+
+      this.navCtrl.back();
+    } catch (error) {
+      console.error('Error al guardar el documento:', error);
+      await this.presentToast('Ocurrió un error al guardar el documento.');
+    }
   }
 
-
-  private async checkPermissions() {
+  private async presentToast(message: string) {
     const toast = await this.toastController.create({
-      message: `Es necesario habilitar los permisos de notificación para poder continuar. Si no lo haces, no recibirás notificaciones.`,
+      message,
       duration: 3000,
-      position: 'top',
+      position: 'bottom'
     });
     await toast.present();
-    await LocalNotifications.requestPermissions();
+  }
+
+  private async checkPermissions() {
+    const permission = await LocalNotifications.requestPermissions();
+    if (permission.display !== 'granted') {
+      throw new Error('Permiso para notificaciones denegado');
+    }
   }
 
   private async scheduleNotification() {
     const title = this.documentForm.get('title')?.value;
-    const content = this.documentForm.get('content')?.value;
-    const eventDatetime = this.documentForm.get('event_datetime')?.value;
-    const dateString = eventDatetime;
-    const dateObject = new Date(dateString);
-    this.checkPermissions();
-    const notiId = Date.now();
-    let noti: any = {
-      notifications: [
-        {
-          title: title,
-          body: content,
-          id: 1,
-          schedule: {at: dateObject},
-          sound: null,
-          attachments: null,
+    const body = this.documentForm.get('content')?.value;
+    const datetime = this.documentForm.get('event_datetime')?.value;
+
+    if (!datetime) return;
+
+    const scheduleDate = new Date(datetime);
+    if (scheduleDate <= new Date()) {
+      console.warn('La fecha de la notificación debe ser en el futuro');
+      return;
+    }
+
+    try {
+      await this.checkPermissions();
+
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: Date.now(),
+          title,
+          body,
+          schedule: { at: scheduleDate },
           actionTypeId: '',
-          extra: null
-        }
-      ]
-    };
-    await LocalNotifications.schedule(noti);
+          extra: {}
+        }]
+      });
+    } catch (error) {
+      console.error('Error al programar notificación:', error);
+    }
   }
 
+  async onFileSelected(event: any, fileType: 'image' | 'pdf') {
+    const file = event.target?.files?.[0];
+    if (!file) return;
 
-  async onFileSelected(event: any): Promise<void> {
-    const fileInput: any = event.target as HTMLInputElement;
-    const file = fileInput.files ? fileInput.files[0] : null;
-    if (file) {
-      try {
-        const base64File = await this.readFileAsBase64(file);
-        const savedFile = await this.saveFile(file.name, base64File);
-        this.filePath = savedFile.uri;
-        this.documentForm.get('file')?.setValue(this.filePath);
-        //this.openFile(this.filePath);
-      } catch (error) {
-        console.error('Error al procesar el archivo:', error);
+    try {
+      if (fileType === 'image') {
+        const base64 = await this.readFileAsBase64(file);
+        const saved = await this.saveFile(file.name, base64);
+
+        this.filePreview = base64;
+        this.imageFilePath = saved.uri;
+        this.documentForm.get('imageFile')?.setValue(saved.uri);
+        this.fileUri = null; // reset PDF preview
+      } else {
+        // PDF: crea URL directamente para mostrar en iframe
+        this.fileUri = URL.createObjectURL(file);
+        this.pdfFilePath = file.name; // guarda solo el nombre o ruta según implementación
+        this.documentForm.get('pdfFile')?.setValue(this.pdfFilePath);
+
+        this.filePreview = null; // reset image preview
       }
+    } catch (error) {
+      console.error('Error al procesar archivo:', error);
+      await this.presentToast('Error al procesar archivo.');
     }
   }
 
   private readFileAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);
-      };
+      reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   }
 
   private async saveFile(fileName: string, base64: string) {
-    const savedFile = await Filesystem.writeFile({
+    return await Filesystem.writeFile({
       path: fileName,
       data: base64,
-      directory: Directory.Documents,
-      encoding: Encoding.UTF8
+      directory: Directory.Documents
     });
-    return savedFile;
   }
-
-
-
 }
