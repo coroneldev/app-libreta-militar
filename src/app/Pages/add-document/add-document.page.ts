@@ -14,6 +14,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SafeUrlPipe } from '../../pipes/safe-url.pipe';
 import { Subscription } from 'rxjs';
 
+
+
 @Component({
   selector: 'app-add-document',
   templateUrl: './add-document.page.html',
@@ -46,7 +48,7 @@ export class AddDocumentPage implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private activatedRoute: ActivatedRoute,
     private toastController: ToastController
-  ) {}
+  ) { }
 
   ngOnInit() {
     // Nos suscribimos a params para reactualizar si cambian
@@ -173,30 +175,24 @@ export class AddDocumentPage implements OnInit, OnDestroy {
     }
   }
 
-  async onFileSelected(event: any, fileType: 'image' | 'pdf') {
-    const file = event.target?.files?.[0];
+  imagePreview: string | null = null;
+  pdfUri: string | null = null;
+
+  async onFileSelected(event: any, type: 'image' | 'pdf') {
+    const file = event.target.files[0];
     if (!file) return;
-
     try {
-      if (fileType === 'image') {
-        const base64 = await this.readFileAsBase64(file);
-        const saved = await this.saveFile(file.name, base64);
+      const base64 = await this.readFileAsBase64(file);
 
-        this.filePreview = base64;
-        this.imageFilePath = saved.uri;
-        this.documentForm.get('imageFile')?.setValue(saved.uri);
-        this.fileUri = null; // reset PDF preview
-      } else {
-        // PDF: crea URL directamente para mostrar en iframe
-        this.fileUri = URL.createObjectURL(file);
-        this.pdfFilePath = file.name; // guarda solo el nombre o ruta según implementación
-        this.documentForm.get('pdfFile')?.setValue(this.pdfFilePath);
-
-        this.filePreview = null; // reset image preview
+      if (type === 'image') {
+        this.imagePreview = base64;
+        this.imageFilePath = base64;  // Opcional, para mantenerlo en el form
+      } else if (type === 'pdf') {
+        this.pdfUri = base64;
+        this.pdfFilePath = base64; // Igual, si quieres guardar la ruta base64 en el form
       }
     } catch (error) {
-      console.error('Error al procesar archivo:', error);
-      await this.presentToast('Error al procesar archivo.');
+      console.error('Error leyendo archivo:', error);
     }
   }
 
@@ -209,11 +205,6 @@ export class AddDocumentPage implements OnInit, OnDestroy {
     });
   }
 
-  private async saveFile(fileName: string, base64: string) {
-    return await Filesystem.writeFile({
-      path: fileName,
-      data: base64,
-      directory: Directory.Documents
-    });
-  }
+
+
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   ActionSheetController,
   IonBackButton,
@@ -65,6 +66,7 @@ import { FileOpener } from "@capacitor-community/file-opener";
     IonSearchbar
   ]
 })
+
 export class DocumentPage implements OnInit {
   public listData: any[] = [];
   public filteredListData: any[] = [];
@@ -198,4 +200,20 @@ export class DocumentPage implements OnInit {
   trackById(index: number, item: any): number {
     return item.id;
   }
+
+  public selectedFile: string | null = null;
+
+  public viewDocument(filePath: string): void {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    if (extension === 'pdf') {
+      this.selectedFile = filePath;
+    } else {
+      this.openFile(filePath);
+    }
+  }
+
+  public closeViewer(): void {
+    this.selectedFile = null;
+  }
+
 }
