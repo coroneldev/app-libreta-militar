@@ -23,7 +23,7 @@
           <ion-input formControlName="firstName" type="text"></ion-input>
         </ion-item>
         <ion-text color="danger"
-                  *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+          *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
           Usuario es obligatorio.
         </ion-text>
 
@@ -48,9 +48,24 @@
           <ion-input formControlName="confirmPassword" type="password"></ion-input>
         </ion-item>
         <ion-text color="danger"
-                  *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
+          *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
           Las contraseñas no coinciden.
         </ion-text>
+
+        <ion-item class="input-item">
+          <ion-label>Tipo de Usuario</ion-label>
+        </ion-item>
+
+        <ion-radio-group formControlName="role">
+          <ion-item>
+            <ion-label>Instructor</ion-label>
+            <ion-radio slot="start" value="INSTRUCTOR"></ion-radio>
+          </ion-item>
+          <ion-item>
+            <ion-label>Estudiante</ion-label>
+            <ion-radio slot="start" value="ESTUDIANTE"></ion-radio>
+          </ion-item>
+        </ion-radio-group>
 
         <div class="button-container">
           <ion-button expand="block" color="success" type="submit" [disabled]="registerForm.invalid">

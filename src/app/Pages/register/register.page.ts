@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } 
 import {
   IonBackButton, IonButton, IonButtons, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle,
   IonCardTitle, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonText, IonTitle,
-  IonToolbar, NavController, ToastController
+  IonToolbar, NavController, ToastController, IonRadioGroup, IonRadio
 } from '@ionic/angular/standalone';
 import { Register } from '../../models/register';
 import { SesionService } from '../../services/sesion.service';
@@ -15,9 +15,27 @@ import { SesionService } from '../../services/sesion.service';
   styleUrls: ['./register.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule,
-    IonCard, IonCardTitle, IonCardHeader, IonCardSubtitle, IonCardContent, IonItem, IonInput,
-    IonLabel, IonButton, IonBackButton, IonButtons, IonText, ReactiveFormsModule
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    IonContent,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonBackButton,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+    IonCardContent,
+    IonItem,
+    IonInput,
+    IonLabel,
+    IonButton,
+    IonText,
+    IonRadioGroup,
+    IonRadio
   ]
 })
 export class RegisterPage implements OnInit {
@@ -34,7 +52,8 @@ export class RegisterPage implements OnInit {
       firstName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
-      confirmPassword: ['', Validators.required]
+      confirmPassword: ['', Validators.required],
+      role: ['', Validators.required]  // Aquí se captura Instructor o Estudiante
     }, { validators: this.passwordMatchValidator });
   }
 
@@ -52,6 +71,9 @@ export class RegisterPage implements OnInit {
 
       console.log('Datos del formulario recibidos:', formData);
 
+      // Guardar el rol en localStorage en mayúsculas para consistencia
+      localStorage.setItem('tipo_usuario', formData.role.toUpperCase());
+
       const encryptedPassword = btoa(formData.password);
 
       const newUser: Register = new Register(
@@ -65,7 +87,7 @@ export class RegisterPage implements OnInit {
       await this.sesion.addDocument(newUser);
 
       const toast = await this.toastController.create({
-        message: `Bienvenid@ ${newUser.firstName}`,
+        message: `Bienvenid@ ${newUser.firstName} como ${formData.role}`,
         duration: 3000,
         position: 'top',
       });
